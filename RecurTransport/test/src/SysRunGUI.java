@@ -1070,6 +1070,7 @@ public class SysRunGUI extends javax.swing.JFrame {
                 + textDriverName.getText() + "', '"
                 + location + "'," + priority + ", '" + this.driverStartTime.getSelectedItem().toString() + "', '" + this.driverFinishTime.getSelectedItem().toString() + "')";
         this.addDriverToDataBase(sqlQuery1);
+        
         this.labelAlert.setText("New Driver added successfully!");
         this.updateDisplayDriverList();
         this.resetDriverTextFields();
