@@ -137,48 +137,54 @@ public class SysRunGUI extends javax.swing.JFrame {
                 int capacityLeft = round.getCapacityLeft();
                 // find a container for the round
                 int orderLeft = 0;
-                for (Order order : order_list) {
-                    if (order.container_list.con20_num > 0 || order.container_list.con40_num > 0) {
-                        orderLeft++;
-                    }
-
-                    boolean sameFromAndTo = order.getFrom().getLocationID().equals(round.getFrom()) && order.getTo().getLocationID().equals(round.getTo());
-                    boolean hasProperContainer = capacityLeft >= 40 && order.container_list.con40_num > 0
-                            && (round.isEmpty() || sameFromAndTo)
-                            || capacityLeft >= 20 && order.container_list.con20_num > 0
-                            && (round.isEmpty() || sameFromAndTo);
-                    while (hasProperContainer && driver.getLocation().substring(0, 6).equalsIgnoreCase(order.getFrom().getLocationID().substring(0, 6))) {
-                        if (capacityLeft >= 40 && order.container_list.con40_num > 0
-                                && (round.isEmpty() || sameFromAndTo)) {
-                            round.addContainer(order.order_id, order.getFrom().getLocationID(), order.getTo().getLocationID(), 40);
-                            order.container_list.con40_num--;
-                            capacityLeft = round.getCapacityLeft();
-                            if (previousRound != null && previousRound != round) {
-                                driver.setLocation(order.getTo().getLocationID());
-                            }
-                            previousRound = round;
-                        } else if (capacityLeft >= 20 && order.container_list.con20_num > 0
-                                && (round.isEmpty() || sameFromAndTo)) {
-                            round.addContainer(order.order_id, order.getFrom().getLocationID(), order.getTo().getLocationID(), 20);
-                            order.container_list.con20_num--;
-                            capacityLeft = round.getCapacityLeft();
-                            if (previousRound != null && previousRound != round) {
-                                driver.setLocation(order.getTo().getLocationID());
-                            }
-                            previousRound = round;
+                // check same location first, then same city, then everywhere
+                // s is used to substring
+                for (int s = 6; s >= 0; s -= 3) {
+                    for (Order order : order_list) {
+                        if (order.container_list.con20_num > 0 || order.container_list.con40_num > 0) {
+                            orderLeft++;
                         }
-                        sameFromAndTo = order.getFrom().getLocationID().equals(round.getFrom()) && order.getTo().getLocationID().equals(round.getTo());
-                        hasProperContainer = capacityLeft >= 40 && order.container_list.con40_num > 0
+
+                        boolean sameFromAndTo = order.getFrom().getLocationID().equals(round.getFrom()) && order.getTo().getLocationID().equals(round.getTo());
+                        boolean hasProperContainer = capacityLeft >= 40 && order.container_list.con40_num > 0
                                 && (round.isEmpty() || sameFromAndTo)
                                 || capacityLeft >= 20 && order.container_list.con20_num > 0
                                 && (round.isEmpty() || sameFromAndTo);
+                        while (hasProperContainer && driver.getLocation().substring(0, s).equalsIgnoreCase(order.getFrom().getLocationID().substring(0, s))) {
+                            if (capacityLeft >= 40 && order.container_list.con40_num > 0
+                                    && (round.isEmpty() || sameFromAndTo)) {
+                                round.addContainer(order.order_id, order.getFrom().getLocationID(), order.getTo().getLocationID(), 40);
+                                order.container_list.con40_num--;
+                                capacityLeft = round.getCapacityLeft();
+                                if (previousRound != null && previousRound != round) {
+                                    driver.setLocation(order.getTo().getLocationID());
+                                }
+                                previousRound = round;
+                            } else if (capacityLeft >= 20 && order.container_list.con20_num > 0
+                                    && (round.isEmpty() || sameFromAndTo)) {
+                                round.addContainer(order.order_id, order.getFrom().getLocationID(), order.getTo().getLocationID(), 20);
+                                order.container_list.con20_num--;
+                                capacityLeft = round.getCapacityLeft();
+                                if (previousRound != null && previousRound != round) {
+                                    driver.setLocation(order.getTo().getLocationID());
+                                }
+                                previousRound = round;
+                            }
+                            sameFromAndTo = order.getFrom().getLocationID().equals(round.getFrom()) && order.getTo().getLocationID().equals(round.getTo());
+                            hasProperContainer = capacityLeft >= 40 && order.container_list.con40_num > 0
+                                    && (round.isEmpty() || sameFromAndTo)
+                                    || capacityLeft >= 20 && order.container_list.con20_num > 0
+                                    && (round.isEmpty() || sameFromAndTo);
+                        }
                     }
                 }
                 if (orderLeft == 0) {
                     return "No order left.";
                 }
+
                 driver.increaseRound();
             }
+
         }
     }
 
