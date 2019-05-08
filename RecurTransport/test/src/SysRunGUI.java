@@ -1115,7 +1115,7 @@ public class SysRunGUI extends javax.swing.JFrame {
         int[] rows = OrderTable.getSelectedRows();
         for (int i = 0; i < rows.length; i++) {
             Object order_id = model.getValueAt(rows[i], 0);
-            this.delDriverFromDB(order_id.toString());
+            this.delOrderFromDB(order_id.toString());
             for (int j = 0; j < order_list.size(); j++) {
                 if (order_list.get(j).getId().equals(order_id.toString())) {
                     order_list.remove(j);
