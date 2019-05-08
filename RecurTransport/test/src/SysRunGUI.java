@@ -457,7 +457,7 @@ public class SysRunGUI extends javax.swing.JFrame {
 
         jLabel1.setText("Order ID:");
 
-        jLabel2.setText("Date:");
+        jLabel2.setText("CutOff Date:");
 
         jLabel4.setText("Address:");
 
@@ -484,7 +484,7 @@ public class SysRunGUI extends javax.swing.JFrame {
 
         jLabel13.setText("E.g 3");
 
-        jLabel18.setText("Time:");
+        jLabel18.setText("CutOff Time:");
 
         orderTime.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "00:00", "01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00" }));
 
@@ -615,7 +615,7 @@ public class SysRunGUI extends javax.swing.JFrame {
 
         driverFinishTime.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "00:00", "01:00", "02:00", "03:00", "04:00", "05:00", "06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00", "21:00", "22:00", "23:00" }));
 
-        jLabel23.setText("Location:");
+        jLabel23.setText("Driver Location:");
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -644,7 +644,7 @@ public class SysRunGUI extends javax.swing.JFrame {
                     .addComponent(driverFinishTime, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(textDriverName, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(driverLocation, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(368, Short.MAX_VALUE))
+                .addContainerGap(326, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1050,7 +1050,7 @@ public class SysRunGUI extends javax.swing.JFrame {
         try {
             priority = Integer.parseInt(this.textDriverPriority.getText());
 
-        } catch (Exception e) {
+         } catch (Exception e) {
             this.labelAlert.setText("Invalid driver priority number");
             return;
         }
@@ -1064,7 +1064,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             return;
         }
         String location = ((Location) this.driverLocation.getSelectedItem()).getLocationID();
-        Driver d = new Driver(textDriverName.getText().toUpperCase(), textDriverId.getText(), location, priority, this.driverStartTime.getSelectedItem().toString(), this.driverFinishTime.getSelectedItem().toString());
+        Driver d = new Driver(textDriverName.getText(), textDriverId.getText().toUpperCase(), location, priority, this.driverStartTime.getSelectedItem().toString(), this.driverFinishTime.getSelectedItem().toString());
         driver_list.add(d);
         String sqlQuery1 = "INSERT INTO DRIVER_LIST VALUES ('" + textDriverId.getText().toUpperCase() + "', '"
                 + textDriverName.getText() + "', '"

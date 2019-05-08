@@ -213,7 +213,7 @@
                 </Component>
                 <Component class="javax.swing.JLabel" name="jLabel2">
                   <Properties>
-                    <Property name="text" type="java.lang.String" value="Date:"/>
+                    <Property name="text" type="java.lang.String" value="CutOff Date:"/>
                   </Properties>
                 </Component>
                 <Component class="javax.swing.JLabel" name="jLabel4">
@@ -277,7 +277,7 @@
                 </Component>
                 <Component class="javax.swing.JLabel" name="jLabel18">
                   <Properties>
-                    <Property name="text" type="java.lang.String" value="Time:"/>
+                    <Property name="text" type="java.lang.String" value="CutOff Time:"/>
                   </Properties>
                 </Component>
                 <Component class="javax.swing.JComboBox" name="orderTime">
@@ -386,7 +386,7 @@
                               <Component id="textDriverName" alignment="0" min="-2" pref="159" max="-2" attributes="0"/>
                               <Component id="driverLocation" alignment="0" min="-2" max="-2" attributes="0"/>
                           </Group>
-                          <EmptySpace pref="368" max="32767" attributes="0"/>
+                          <EmptySpace pref="326" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -561,7 +561,7 @@
                 </Component>
                 <Component class="javax.swing.JLabel" name="jLabel23">
                   <Properties>
-                    <Property name="text" type="java.lang.String" value="Location:"/>
+                    <Property name="text" type="java.lang.String" value="Driver Location:"/>
                   </Properties>
                 </Component>
                 <Component class="javax.swing.JComboBox" name="driverLocation">
