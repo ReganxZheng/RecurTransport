@@ -27,7 +27,7 @@ import java.awt.*;
  * @author ZhengJwh
  */
 public class SysRunGUI extends javax.swing.JFrame {
-    
+
     private String url = "jdbc:derby://localhost:1527/RecirOrderDB; create=true";
     private String username = "Recir";
     private String password = "recir";
@@ -39,16 +39,19 @@ public class SysRunGUI extends javax.swing.JFrame {
     private static HashMap<Driver, Order> dispatch = new HashMap<Driver, Order>();
     private static ArrayList<Location> locations = new ArrayList() {
         {
-            add(new Location("Auckland Britomart", "AKL001"));
-            add(new Location("Auckland Airport", "AKL002"));
-            add(new Location("Auckland Albany", "AKL003"));
-            add(new Location("Hamilton Harbor", "HMT001"));
-            add(new Location("Hamilton Airport", "HMT002"));
-            add(new Location("Tauranga Airport", "TRG001"));
-            add(new Location("Tauranga Port", "TRG002"));
+            add(new Location("131 Wiri Station Rd", "MCP"));
+            add(new Location("21 Oak Road", "UCL"));
+            add(new Location("339 Neilson St", "Metrobox"));
+            add(new Location("140 Hugo Johnston Drive", "Hugo Jonhston"));
+            add(new Location("131 Wiri Station Rd", "WIP"));
+            add(new Location("339 Neilson St", "Kiwi Rail"));
+            add(new Location("20 Savill Dr", "SCS"));
+            add(new Location("Sunderland St", "FED"));
+            add(new Location("Solent St", "FCT"));
+
         }
     };
-    
+
     public void sortDriverList() {
         Driver temp;
         for (int i = 0; i < driver_list.size(); i++) {
@@ -59,7 +62,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             }
         }
     }
-    
+
     public void sortOrderList() {
         for (Order o : order_list) {
             if (o.getContainer().isEmpty()) {
@@ -75,7 +78,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             }
         }
     }
-    
+
     public Driver getAvailableDriver(int daysAhead) {
         for (Driver driver : driver_list) {
             if (driver.getRoundNumber() < 6 * daysAhead) {
@@ -84,7 +87,7 @@ public class SysRunGUI extends javax.swing.JFrame {
         }
         return null;
     }
-    
+
     public int getDispatchDays() {
         String option = this.dispatchDays.getSelectedItem().toString();
         if (option.equals("3 Days")) {
@@ -95,7 +98,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             return 1;
         }
     }
-    
+
     public String dispatchingOrders() {
         int dispatchDaysAhead = this.getDispatchDays();
         while (true) {
@@ -123,7 +126,7 @@ public class SysRunGUI extends javax.swing.JFrame {
                         if (order.container_list.con20_num > 0 || order.container_list.con40_num > 0) {
                             orderLeft++;
                         }
-                        
+
                         boolean sameFromAndTo = order.getFrom().getLocationID().equals(round.getFrom()) && order.getTo().getLocationID().equals(round.getTo());
                         boolean hasProperContainer = capacityLeft >= 40 && order.container_list.con40_num > 0
                                 && (round.isEmpty() || sameFromAndTo)
@@ -160,14 +163,15 @@ public class SysRunGUI extends javax.swing.JFrame {
                 if (orderLeft == 0) {
                     return "No order left.";
                 }
-                
+
                 driver.increaseRound();
             }
-            
+
         }
     }
-    
-    public String getDispatchResultString(String result) {
+
+    public ArrayList<String> getDispatchResultString(String result) {
+        ArrayList<String> allResult = new ArrayList<String>();
         String all = "";
         for (Driver driver : driver_list) {
             int r = 0;
@@ -176,37 +180,54 @@ public class SysRunGUI extends javax.swing.JFrame {
                 for (Map.Entry<String, HashMap<Integer, Integer>> order : round.getOrderDispatch().entrySet()) {
                     String containerInfo = "";
                     if (order.getValue().containsKey(40)) {
-                        containerInfo += " 40ft:" + order.getValue().get(40);
+                        containerInfo += "40ft:" + order.getValue().get(40);
                     }
                     if (order.getValue().containsKey(20)) {
-                        containerInfo += " 20ft:" + order.getValue().get(20);
+                        containerInfo += ":20ft:" + order.getValue().get(20);
                     }
                     if (containerInfo != "") {
                         if (orderId.equals(order.getKey())) {
                             all += containerInfo;
                         } else {
-                            all += "\n" + driver.getName() + ", priority:" + driver.getPriority() + ", day: " + (int) (r / 6 + 1) + ", round:" + (r % 6 + 1) + ", order id:" + order.getKey() + ", from: " + round.getFrom() + ", to: " + round.getTo() + ", containers:" + containerInfo;
+                            all = driver.getName() + ",priority:" + driver.getPriority() + ",day:"
+                                    + (int) (r / 6 + 1) + ",round:" + (r % 6 + 1) + ",order id:" + order.getKey() + ",from: "
+                                    + round.getFrom() + ",to:" + round.getTo() + ",containers:" + containerInfo;
+                            String[] containerSplit = containerInfo.split(":");
+                            int con20 = 0, con40 = 0;
+                            if (containerSplit.length == 4) {
+                                con20 = Integer.parseInt(containerSplit[3]);
+                                con40 = Integer.parseInt(containerSplit[1]);
+                            }
+                            if (containerSplit.length == 3) {
+                                con20 = Integer.parseInt(containerSplit[2]);
+                            }
+                            String sqlQuery = "INSERT INTO DISPATCH_RESULT VALUES ('" + driver.getName()
+                                    + "'," + driver.getPriority() + "," + (int) (r / 6 + 1) + "," + (r % 6 + 1) + ",'" + order.getKey() + "','"
+                                    + round.getFrom() + "','" + round.getTo() + "'," + con40 + "," + con20+")";
+                            addDispatchToDatabase(sqlQuery);
                         }
                     }
+                    allResult.add(all);
+
                 }
                 r++;
             }
         }
-        
+
         all += "\n" + result;
-        return all;
+        return allResult;
     }
-    
+
     public void establishConnection() {
         try {
             conn = DriverManager.getConnection(url, username, password);
-            
+
             System.out.println(url + " database connected.");
         } catch (SQLException e) {
             Logger.getLogger(SysRun.class.getName()).log(Level.SEVERE, null, e);
         }
     }
-    
+
     public void closeDataBaseConnection() {
         if (conn != null) {
             try {
@@ -217,16 +238,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             }
         }
     }
-    
-    public void formDatabaseTable() {
-        //Use DMBC create your own local database. Form a TABLE for ORDER, DRIVER
-        //In ORDER table, the variables are ORDER_ID VARCHAR(20), START_DATE VARCHAR(30),
-        //CUTOFF_DATE VARCHAR(30), 20_FT_CONTAINER INT, 40_FT_CONTAINER INT.
 
-        //In DRIVER table, the varibles are DRIVER_NAME VARCHAR(30), DRIVER_ID VARCHAR(20),
-        //DRIVER_PRIORITY INT.
-    }
-    
     public void addOrderToDataBase(String sqlQuery) {
         try {
             statement.executeUpdate(sqlQuery);
@@ -235,7 +247,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             Logger.getLogger(SysRun.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     public void addDriverToDataBase(String sqlQuery) {
         try {
             statement.executeUpdate(sqlQuery);
@@ -244,7 +256,16 @@ public class SysRunGUI extends javax.swing.JFrame {
             Logger.getLogger(SysRun.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
+    public void addDispatchToDatabase(String sqlQuery) {
+        try {
+            statement.executeUpdate(sqlQuery);
+        } catch (SQLException ex) {
+            this.labelAlert.setText("Failed to write driver to database: " + ex.getMessage());
+            Logger.getLogger(SysRun.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
     public void clearDriversInDB() {
         try {
             statement.execute("DELETE FROM DRIVER_LIST");
@@ -253,7 +274,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             Logger.getLogger(SysRun.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     public void clearOrdersInDB() {
         try {
             statement.execute("DELETE FROM ORDER_LIST");
@@ -262,7 +283,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             Logger.getLogger(SysRun.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     public void createTables() {
         try {
             statement = conn.createStatement();
@@ -270,15 +291,23 @@ public class SysRunGUI extends javax.swing.JFrame {
             statement.execute(sqlQuery);
         } catch (SQLException ex) {
         }
-        
+
         try {
             statement = conn.createStatement();
             String sqlQuery = "create table ORDER_LIST (order_id VARCHAR(100) PRIMARY KEY, date_year INT, date_month int, date_day int, date_hour int, date_min int, con20 int, con40 int, address_id VARCHAR(100), from_name VARCHAR(100), from_id VARCHAR(100), to_name VARCHAR(100), to_id VARCHAR(100))";
             statement.execute(sqlQuery);
         } catch (SQLException ex) {
         }
+
+        try {
+            statement = conn.createStatement();
+            String sqlQuery = "CREATE TABLE DISPATCH_RESULT (DRIVER_NAME VARCHAR(50), DRIVER_PRIORITY INT, DAY INT, ROUND INT, ORDER_ID VARCHAR(100), FROM_LOCATION VARCHAR(10), TO_LOCATION VARCHAR(10), CON40 INT, CON20 INT)";
+            statement.execute(sqlQuery);
+        } catch (SQLException ex) {
+
+        }
     }
-    
+
     public void retriveDrvierList() {
         ResultSet rs = null;
         try {
@@ -303,7 +332,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             Logger.getLogger(SysRun.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     public void retriveOrderList() {
         ResultSet rs = null;
         try {
@@ -335,7 +364,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             Logger.getLogger(SysRun.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
+
     public void run() {
         this.fromLocation.removeAllItems();
         for (Location l : locations) {
@@ -351,7 +380,7 @@ public class SysRunGUI extends javax.swing.JFrame {
         }
         String dispatchResult = null;
         this.establishConnection();
-        
+
         ImageIcon icon1 = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("RecurIcon.png")));
         Image img1 = icon1.getImage();
         Image img2 = img1.getScaledInstance(jLabel24.getWidth(), jLabel24.getHeight(), Image.SCALE_SMOOTH);
@@ -361,7 +390,7 @@ public class SysRunGUI extends javax.swing.JFrame {
         this.retriveDrvierList();
         this.retriveOrderList();
         String user_choice;
-        
+
     }
 
     /**
@@ -433,10 +462,10 @@ public class SysRunGUI extends javax.swing.JFrame {
         btnDelDriver = new javax.swing.JButton();
         jPanel6 = new javax.swing.JPanel();
         btnDispatch = new javax.swing.JButton();
-        jpanel2 = new javax.swing.JScrollPane();
-        textDispatchResult = new javax.swing.JTextPane();
         dispatchDays = new javax.swing.JComboBox<>();
         jLabel16 = new javax.swing.JLabel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        dispatchTable = new javax.swing.JTable();
         jLabel15 = new javax.swing.JLabel();
         labelAlert = new javax.swing.JLabel();
         jLabel17 = new javax.swing.JLabel();
@@ -503,18 +532,17 @@ public class SysRunGUI extends javax.swing.JFrame {
                     .addComponent(jLabel6))
                 .addGap(18, 18, 18)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(fromLocation, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGroup(jPanel2Layout.createSequentialGroup()
-                            .addGap(9, 9, 9)
-                            .addComponent(jLabel7))
-                        .addComponent(textOrder, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(orderTime, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGroup(jPanel2Layout.createSequentialGroup()
-                            .addComponent(textDate, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(jLabel3))
-                        .addComponent(textAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 303, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(fromLocation, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGap(9, 9, 9)
+                        .addComponent(jLabel7))
+                    .addComponent(textOrder, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(orderTime, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(textDate, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel3))
+                    .addComponent(textAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 303, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(toLocation, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
@@ -831,13 +859,45 @@ public class SysRunGUI extends javax.swing.JFrame {
             }
         });
 
-        textDispatchResult.setEditable(false);
-        textDispatchResult.setText("Dispatch result will show up here...");
-        jpanel2.setViewportView(textDispatchResult);
-
         dispatchDays.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "1 Day", "3 Days", "1 Week" }));
 
         jLabel16.setText("Dispatch Days:");
+
+        dispatchTable.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+
+            },
+            new String [] {
+                "Name", "Priority", "Day", "Round", "Order ID", "FROM", "TO", "40Ft", "20Ft"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class
+            };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
+            }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
+        jScrollPane2.setViewportView(dispatchTable);
+        if (dispatchTable.getColumnModel().getColumnCount() > 0) {
+            dispatchTable.getColumnModel().getColumn(0).setMinWidth(150);
+            dispatchTable.getColumnModel().getColumn(0).setMaxWidth(200);
+            dispatchTable.getColumnModel().getColumn(2).setResizable(false);
+            dispatchTable.getColumnModel().getColumn(3).setResizable(false);
+            dispatchTable.getColumnModel().getColumn(4).setResizable(false);
+            dispatchTable.getColumnModel().getColumn(5).setResizable(false);
+            dispatchTable.getColumnModel().getColumn(6).setResizable(false);
+            dispatchTable.getColumnModel().getColumn(7).setResizable(false);
+            dispatchTable.getColumnModel().getColumn(8).setResizable(false);
+        }
 
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
@@ -853,7 +913,7 @@ public class SysRunGUI extends javax.swing.JFrame {
                 .addContainerGap(330, Short.MAX_VALUE))
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jpanel2)
+                .addComponent(jScrollPane2)
                 .addContainerGap())
         );
         jPanel6Layout.setVerticalGroup(
@@ -865,8 +925,8 @@ public class SysRunGUI extends javax.swing.JFrame {
                     .addComponent(dispatchDays, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel16))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jpanel2, javax.swing.GroupLayout.DEFAULT_SIZE, 343, Short.MAX_VALUE)
-                .addContainerGap())
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 341, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(12, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Dispatch", jPanel6);
@@ -892,8 +952,9 @@ public class SysRunGUI extends javax.swing.JFrame {
                         .addGap(18, 18, 18)
                         .addComponent(labelAlert, javax.swing.GroupLayout.PREFERRED_SIZE, 732, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addContainerGap()
                         .addComponent(jLabel24, javax.swing.GroupLayout.PREFERRED_SIZE, 68, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(154, 154, 154)
+                        .addGap(144, 144, 144)
                         .addComponent(jLabel15)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -941,7 +1002,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             model.addRow(rowData);
         }
     }
-    
+
     private void updateDisplayOrderList() {
         this.sortOrderList();
         DefaultTableModel model = (DefaultTableModel) OrderTable.getModel();
@@ -982,23 +1043,23 @@ public class SysRunGUI extends javax.swing.JFrame {
             this.labelAlert.setText("Invalid order ID");
             return;
         }
-        
+
         try {
             con20 = Integer.parseInt(this.text20FtNum.getText());
-            
+
         } catch (Exception e) {
             this.labelAlert.setText("Invalid 20 feet container number");
             return;
         }
-        
+
         try {
             con40 = Integer.parseInt(this.text40FtNum.getText());
-            
+
         } catch (Exception e) {
             this.labelAlert.setText("Invalid 40 feet container number");
             return;
         }
-        
+
         if (this.textAddress.getText().isEmpty()) {
             this.labelAlert.setText("Invalid order address");
             return;
@@ -1024,7 +1085,7 @@ public class SysRunGUI extends javax.swing.JFrame {
         this.updateDisplayOrderList();
         this.resetOrderTextFields();
     }//GEN-LAST:event_btnAddOrderActionPerformed
-    
+
     private void resetOrderTextFields() {
         this.textOrder.setText("");
         this.textDate.setText("");
@@ -1039,12 +1100,12 @@ public class SysRunGUI extends javax.swing.JFrame {
         int priority;
         try {
             priority = Integer.parseInt(this.textDriverPriority.getText());
-            
+
         } catch (Exception e) {
             this.labelAlert.setText("Invalid driver priority number");
             return;
         }
-        
+
         if (this.textDriverId.getText().isEmpty()) {
             this.labelAlert.setText("Invalid driver ID");
             return;
@@ -1060,12 +1121,12 @@ public class SysRunGUI extends javax.swing.JFrame {
                 + textDriverName.getText() + "', '"
                 + location + "'," + priority + ", '" + this.driverStartTime.getSelectedItem().toString() + "', '" + this.driverFinishTime.getSelectedItem().toString() + "')";
         this.addDriverToDataBase(sqlQuery1);
-        
+
         this.labelAlert.setText("New Driver added successfully!");
         this.updateDisplayDriverList();
         this.resetDriverTextFields();
     }//GEN-LAST:event_btnAddDriverActionPerformed
-    
+
     private void resetDriverTextFields() {
         this.textDriverName.setText("");
         this.textDriverId.setText("");
@@ -1075,7 +1136,35 @@ public class SysRunGUI extends javax.swing.JFrame {
         this.driverFinishTime.setSelectedIndex(0);
     }
     private void btnDispatchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDispatchActionPerformed
-        this.textDispatchResult.setText(this.getDispatchResultString(this.dispatchingOrders()));
+        ArrayList<String> result = this.getDispatchResultString(this.dispatchingOrders());
+        DefaultTableModel model = (DefaultTableModel) dispatchTable.getModel();
+        model.setRowCount(0);
+        Object rowData[] = new Object[9];
+        for (String s : result) {
+            String[] split1 = s.split(",");
+            rowData[0] = split1[0];
+            String[] prioritySplit = split1[1].split(":");
+            rowData[1] = prioritySplit[1];
+            String[] daySplit = split1[2].split(":");
+            rowData[2] = daySplit[1];
+            String[] roundSplit = split1[3].split(":");
+            rowData[3] = roundSplit[1];
+            String[] orderIdSplit = split1[4].split(":");
+            rowData[4] = orderIdSplit[1];
+            String[] fromSplit = split1[5].split(":");
+            rowData[5] = fromSplit[1];
+            String[] toSplit = split1[6].split(":");
+            rowData[6] = toSplit[1];
+            String[] containerSplit = split1[7].split(":");
+            if (containerSplit.length == 4) {
+                rowData[7] = "0";
+                rowData[8] = containerSplit[3];
+            } else if (containerSplit.length == 5) {
+                rowData[7] = containerSplit[2];
+                rowData[8] = containerSplit[4];
+            }
+            model.addRow(rowData);
+        }
     }//GEN-LAST:event_btnDispatchActionPerformed
 
     private void btnResetOrdersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnResetOrdersActionPerformed
@@ -1084,7 +1173,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             d.resetRounds();
         }
         this.clearOrdersInDB();
-        this.textDispatchResult.setText("");
+//        this.textDispatchResult.setText("");
         this.updateDisplayOrderList();
     }//GEN-LAST:event_btnResetOrdersActionPerformed
 
@@ -1127,7 +1216,7 @@ public class SysRunGUI extends javax.swing.JFrame {
         this.labelAlert.setText("Driver successfully deleted from database");
         this.updateDisplayDriverList();
     }//GEN-LAST:event_btnDelDriverActionPerformed
-    
+
     private void delDriverFromDB(String id) {
         try {
             String sql = "DELETE FROM DRIVER_LIST WHERE DRIVER_ID LIKE'" + id + "'";
@@ -1136,7 +1225,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             System.out.println(ex.getMessage());
         }
     }
-    
+
     private void delOrderFromDB(String id) {
         try {
             String sql = "DELETE FROM ORDER_LIST WHERE ORDER_ID LIKE'" + id + "'";
@@ -1192,6 +1281,7 @@ public class SysRunGUI extends javax.swing.JFrame {
     private javax.swing.JButton btnResetDrivers;
     private javax.swing.JButton btnResetOrders;
     private javax.swing.JComboBox<String> dispatchDays;
+    private javax.swing.JTable dispatchTable;
     private javax.swing.JComboBox<String> driverFinishTime;
     private javax.swing.JComboBox<Location> driverLocation;
     private javax.swing.JComboBox<String> driverStartTime;
@@ -1227,16 +1317,15 @@ public class SysRunGUI extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel6;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JTabbedPane jTabbedPane1;
-    private javax.swing.JScrollPane jpanel2;
     private javax.swing.JLabel labelAlert;
     private javax.swing.JComboBox<String> orderTime;
     private javax.swing.JTextField text20FtNum;
     private javax.swing.JTextField text40FtNum;
     private javax.swing.JTextField textAddress;
     private javax.swing.JTextField textDate;
-    private javax.swing.JTextPane textDispatchResult;
     private javax.swing.JTextField textDriverId;
     private javax.swing.JTextField textDriverName;
     private javax.swing.JTextField textDriverPriority;
