@@ -381,11 +381,6 @@ public class SysRunGUI extends javax.swing.JFrame {
         String dispatchResult = null;
         this.establishConnection();
 
-        ImageIcon icon1 = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("RecurIcon.png")));
-        Image img1 = icon1.getImage();
-        Image img2 = img1.getScaledInstance(jLabel24.getWidth(), jLabel24.getHeight(), Image.SCALE_SMOOTH);
-        ImageIcon icon2 = new ImageIcon(img2);
-        jLabel24.setIcon(icon2);
         this.createTables();
         this.retriveDrvierList();
         this.retriveOrderList();
@@ -469,11 +464,9 @@ public class SysRunGUI extends javax.swing.JFrame {
         jLabel15 = new javax.swing.JLabel();
         labelAlert = new javax.swing.JLabel();
         jLabel17 = new javax.swing.JLabel();
-        jLabel24 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Recur Transport Management System");
-        setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("RecurIcon.png")));
         setResizable(false);
 
         jPanel1.setToolTipText("");
@@ -952,20 +945,15 @@ public class SysRunGUI extends javax.swing.JFrame {
                         .addGap(18, 18, 18)
                         .addComponent(labelAlert, javax.swing.GroupLayout.PREFERRED_SIZE, 732, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jLabel24, javax.swing.GroupLayout.PREFERRED_SIZE, 68, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(144, 144, 144)
+                        .addGap(222, 222, 222)
                         .addComponent(jLabel15)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jLabel15, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel24, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(1, 1, 1)))
+                .addGap(22, 22, 22)
+                .addComponent(jLabel15, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 421, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -1302,7 +1290,6 @@ public class SysRunGUI extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel21;
     private javax.swing.JLabel jLabel22;
     private javax.swing.JLabel jLabel23;
-    private javax.swing.JLabel jLabel24;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
