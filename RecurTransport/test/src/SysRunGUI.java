@@ -28,12 +28,13 @@ import java.awt.*;
  */
 public class SysRunGUI extends javax.swing.JFrame {
 
-    private String url = "jdbc:derby://localhost:1527/RecirOrderDB; create=true";
-    private String username = "Recir";
-    private String password = "recir";
+    private String dbURL = "jdbc:derby://localhost:1527/RecurSysDB;"
+            + "create=true;user=recur;password=recur2019";
+    String driverURL = "org.apache.derby.jdbc.EmbeddedDriver";
     public Connection conn = null;
     public Statement statement;
     private static int MAX_ROUNT = 6;
+    private int prev_day_dispatch = 0;
     private static ArrayList<Order> order_list = new ArrayList<Order>();
     private static ArrayList<Driver> driver_list = new ArrayList<Driver>();
     private static HashMap<Driver, Order> dispatch = new HashMap<Driver, Order>();
@@ -98,10 +99,10 @@ public class SysRunGUI extends javax.swing.JFrame {
             return 1;
         }
     }
-    
+
     // get drivers and orders from db so we are up to date.
-    public void syncDriversOrdersFromDB(){
-        this.driver_list.clear();        
+    public void syncDriversOrdersFromDB() {
+        this.driver_list.clear();
         this.order_list.clear();
 
         this.retriveDrvierList();
@@ -110,8 +111,82 @@ public class SysRunGUI extends javax.swing.JFrame {
 
     public String dispatchingOrders() {
         this.syncDriversOrdersFromDB();
-        
+
         int dispatchDaysAhead = this.getDispatchDays();
+        prev_day_dispatch = dispatchDaysAhead;
+        while (true) {
+            Driver driver = this.getAvailableDriver(dispatchDaysAhead);
+            if (driver == null) {
+                return "No driver available.";
+            }
+            String defaultLocation = driver.getLocation();
+            int i = 1;
+            // dispatch 1 day or 3 days or 1 week for the driver before getting to next
+            while (driver.getRoundNumber() < 6 * dispatchDaysAhead) {
+                // for new day, reset location to default
+                if (driver.getRoundNumber() % 6 == 0) {
+                    driver.setLocation(defaultLocation);
+                }
+                Round previousRound = null;
+                Round round = driver.getRound();
+                int capacityLeft = round.getCapacityLeft();
+                // find a container for the round
+                int orderLeft = 0;
+                // check same location first, then same city, then everywhere
+                // s is used to substring
+                for (int s = 3; s >= 0; s -= 3) {
+                    for (Order order : order_list) {
+                        if (order.container_list.con20_num > 0 || order.container_list.con40_num > 0) {
+                            orderLeft++;
+                        }
+
+                        boolean sameFromAndTo = order.getFrom().getLocationID().equals(round.getFrom()) && order.getTo().getLocationID().equals(round.getTo());
+                        boolean hasProperContainer = capacityLeft >= 40 && order.container_list.con40_num > 0
+                                && (round.isEmpty() || sameFromAndTo)
+                                || capacityLeft >= 20 && order.container_list.con20_num > 0
+                                && (round.isEmpty() || sameFromAndTo);
+                        while (hasProperContainer && driver.getLocation().substring(0, s).equalsIgnoreCase(order.getFrom().getLocationID().substring(0, s))) {
+                            if (capacityLeft >= 40 && order.container_list.con40_num > 0
+                                    && (round.isEmpty() || sameFromAndTo)) {
+                                round.addContainer(order.order_id, order.getFrom().getLocationID(), order.getTo().getLocationID(), 40);
+                                order.container_list.con40_num--;
+                                capacityLeft = round.getCapacityLeft();
+                                if (previousRound != null && previousRound != round) {
+                                    driver.setLocation(order.getTo().getLocationID());
+                                }
+                                previousRound = round;
+                            } else if (capacityLeft >= 20 && order.container_list.con20_num > 0
+                                    && (round.isEmpty() || sameFromAndTo)) {
+                                round.addContainer(order.order_id, order.getFrom().getLocationID(), order.getTo().getLocationID(), 20);
+                                order.container_list.con20_num--;
+                                capacityLeft = round.getCapacityLeft();
+                                if (previousRound != null && previousRound != round) {
+                                    driver.setLocation(order.getTo().getLocationID());
+                                }
+                                previousRound = round;
+                            }
+                            sameFromAndTo = order.getFrom().getLocationID().equals(round.getFrom()) && order.getTo().getLocationID().equals(round.getTo());
+                            hasProperContainer = capacityLeft >= 40 && order.container_list.con40_num > 0
+                                    && (round.isEmpty() || sameFromAndTo)
+                                    || capacityLeft >= 20 && order.container_list.con20_num > 0
+                                    && (round.isEmpty() || sameFromAndTo);
+                        }
+                    }
+                }
+                if (orderLeft == 0) {
+                    return "No order left.";
+                }
+
+                driver.increaseRound();
+            }
+
+        }
+    }
+
+    public String reDispatchingOrders() {
+        this.syncDriversOrdersFromDB();
+
+        int dispatchDaysAhead = prev_day_dispatch;
         while (true) {
             Driver driver = this.getAvailableDriver(dispatchDaysAhead);
             if (driver == null) {
@@ -214,7 +289,7 @@ public class SysRunGUI extends javax.swing.JFrame {
                             }
                             String sqlQuery = "INSERT INTO DISPATCH_RESULT VALUES ('" + driver.getName()
                                     + "'," + driver.getPriority() + "," + (int) (r / 6 + 1) + "," + (r % 6 + 1) + ",'" + order.getKey() + "','"
-                                    + round.getFrom() + "','" + round.getTo() + "'," + con40 + "," + con20+")";
+                                    + round.getFrom() + "','" + round.getTo() + "'," + con40 + "," + con20 + ")";
                             addDispatchToDatabase(sqlQuery);
                         }
                     }
@@ -231,11 +306,14 @@ public class SysRunGUI extends javax.swing.JFrame {
 
     public void establishConnection() {
         try {
-            conn = DriverManager.getConnection(url, username, password);
+            Class.forName(driverURL);
+            conn = DriverManager.getConnection(dbURL);
 
-            System.out.println(url + " database connected.");
+            System.out.println("database connected.");
         } catch (SQLException e) {
             Logger.getLogger(SysRun.class.getName()).log(Level.SEVERE, null, e);
+        } catch (ClassNotFoundException ex) {
+
         }
     }
 
@@ -243,7 +321,7 @@ public class SysRunGUI extends javax.swing.JFrame {
         if (conn != null) {
             try {
                 conn.close();
-                System.out.println("Connection close at " + url);
+                System.out.println("Connection closed");
             } catch (SQLException e) {
                 Logger.getLogger(SysRun.class.getName()).log(Level.SEVERE, null, e);
             }
@@ -392,11 +470,15 @@ public class SysRunGUI extends javax.swing.JFrame {
         String dispatchResult = null;
         this.establishConnection();
 
-        ImageIcon icon1 = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("RecurIcon.png")));
-        Image img1 = icon1.getImage();
-        Image img2 = img1.getScaledInstance(jLabel24.getWidth(), jLabel24.getHeight(), Image.SCALE_SMOOTH);
-        ImageIcon icon2 = new ImageIcon(img2);
-        jLabel24.setIcon(icon2);
+        try {
+            ImageIcon icon1 = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("RecurIcon.png")));
+            Image img1 = icon1.getImage();
+            Image img2 = img1.getScaledInstance(jLabel24.getWidth(), jLabel24.getHeight(), Image.SCALE_SMOOTH);
+            ImageIcon icon2 = new ImageIcon(img2);
+            jLabel24.setIcon(icon2);
+        } catch (NullPointerException e) {
+
+        }
         this.createTables();
         this.retriveDrvierList();
         this.retriveOrderList();
@@ -1002,7 +1084,6 @@ public class SysRunGUI extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void updateDisplayDriverList() {
-        this.sortDriverList();
         DefaultTableModel model = (DefaultTableModel) DriverTable.getModel();
         model.setRowCount(0);
         Object rowData[] = new Object[4];
@@ -1016,7 +1097,6 @@ public class SysRunGUI extends javax.swing.JFrame {
     }
 
     private void updateDisplayOrderList() {
-        this.sortOrderList();
         DefaultTableModel model = (DefaultTableModel) OrderTable.getModel();
         model.setRowCount(0);
         Object rowData[] = new Object[8];
@@ -1030,6 +1110,40 @@ public class SysRunGUI extends javax.swing.JFrame {
             rowData[6] = order_list.get(i).getFrom().getLocationID();
             rowData[7] = order_list.get(i).getTo().getLocationID();
             model.addRow(rowData);
+        }
+    }
+
+    private void updateDispatchTable() {
+        if (prev_day_dispatch != 0) {
+            ArrayList<String> result = this.getDispatchResultString(this.reDispatchingOrders());
+            DefaultTableModel model = (DefaultTableModel) dispatchTable.getModel();
+            model.setRowCount(0);
+            Object rowData[] = new Object[9];
+            for (String s : result) {
+                String[] split1 = s.split(",");
+                rowData[0] = split1[0];
+                String[] prioritySplit = split1[1].split(":");
+                rowData[1] = prioritySplit[1];
+                String[] daySplit = split1[2].split(":");
+                rowData[2] = daySplit[1];
+                String[] roundSplit = split1[3].split(":");
+                rowData[3] = roundSplit[1];
+                String[] orderIdSplit = split1[4].split(":");
+                rowData[4] = orderIdSplit[1];
+                String[] fromSplit = split1[5].split(":");
+                rowData[5] = fromSplit[1];
+                String[] toSplit = split1[6].split(":");
+                rowData[6] = toSplit[1];
+                String[] containerSplit = split1[7].split(":");
+                if (containerSplit.length == 4) {
+                    rowData[7] = "0";
+                    rowData[8] = containerSplit[3];
+                } else if (containerSplit.length == 5) {
+                    rowData[7] = containerSplit[2];
+                    rowData[8] = containerSplit[4];
+                }
+                model.addRow(rowData);
+            }
         }
     }
 
@@ -1093,7 +1207,7 @@ public class SysRunGUI extends javax.swing.JFrame {
         this.addOrderToDataBase(sqlQuery);
         order_list.add(o);
         this.labelAlert.setText("New Order added successfully!");
-        this.sortDriverList();
+        this.sortOrderList();
         this.updateDisplayOrderList();
         this.resetOrderTextFields();
     }//GEN-LAST:event_btnAddOrderActionPerformed
@@ -1135,6 +1249,7 @@ public class SysRunGUI extends javax.swing.JFrame {
         this.addDriverToDataBase(sqlQuery1);
 
         this.labelAlert.setText("New Driver added successfully!");
+        this.sortDriverList();
         this.updateDisplayDriverList();
         this.resetDriverTextFields();
     }//GEN-LAST:event_btnAddDriverActionPerformed
@@ -1210,6 +1325,7 @@ public class SysRunGUI extends javax.swing.JFrame {
         }
         this.labelAlert.setText("Order successfully deleted from database");
         this.updateDisplayOrderList();
+        this.updateDispatchTable();
     }//GEN-LAST:event_btnDelOrderActionPerformed
 
     private void btnDelDriverActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDelDriverActionPerformed
@@ -1227,6 +1343,7 @@ public class SysRunGUI extends javax.swing.JFrame {
         }
         this.labelAlert.setText("Driver successfully deleted from database");
         this.updateDisplayDriverList();
+        this.updateDispatchTable();
     }//GEN-LAST:event_btnDelDriverActionPerformed
 
     private void delDriverFromDB(String id) {
