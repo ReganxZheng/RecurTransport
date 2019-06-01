@@ -14,6 +14,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.*;
+import java.awt.*;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -37,38 +39,18 @@ public class SysRunGUI extends javax.swing.JFrame {
     private static HashMap<Driver, Order> dispatch = new HashMap<Driver, Order>();
     private static ArrayList<Location> locations = new ArrayList() {
         {
-            add(new Location("Auckland Britomart", "AKL001"));
-            add(new Location("Auckland Airport", "AKL002"));
-            add(new Location("Auckland Albany", "AKL003"));
-            add(new Location("Hamilton Harbor", "HMT001"));
-            add(new Location("Hamilton Airport", "HMT002"));
-            add(new Location("Tauranga Airport", "TRG001"));
-            add(new Location("Tauranga Port", "TRG002"));
+            add(new Location("131 Wiri Station Rd", "MCP"));
+            add(new Location("21 Oak Road", "UCL"));
+            add(new Location("339 Neilson St", "Metrobox"));
+            add(new Location("140 Hugo Johnston Drive", "Hugo Jonhston"));
+            add(new Location("131 Wiri Station Rd", "WIP"));
+            add(new Location("339 Neilson St", "Kiwi Rail"));
+            add(new Location("20 Savill Dr", "SCS"));
+            add(new Location("Sunderland St", "FED"));
+            add(new Location("Solent St", "FCT"));
+
         }
     };
-
-//    public String getOrderListString() {
-//        if (order_list.isEmpty()) {
-//            return "The order list is currently empty, please add orders!";
-//        }
-//        int num = 1;
-//        String result = "";
-//        for (Order o : order_list) {
-//            result += "Order priority: " + num + ", " + o.toString() + "\n";
-//            num++;
-//        }
-//        return result;
-//    }
-    public String getDriverListString() {
-        if (driver_list.isEmpty()) {
-            return "No data store in driver list yet!";
-        }
-        String result = "";
-        for (Driver d : driver_list) {
-            result += d.toString() + "\n";
-        }
-        return result;
-    }
 
     public void sortDriverList() {
         Driver temp;
@@ -116,8 +98,19 @@ public class SysRunGUI extends javax.swing.JFrame {
             return 1;
         }
     }
+    
+    // get drivers and orders from db so we are up to date.
+    public void syncDriversOrdersFromDB(){
+        this.driver_list.clear();        
+        this.order_list.clear();
+
+        this.retriveDrvierList();
+        this.retriveOrderList();
+    }
 
     public String dispatchingOrders() {
+        this.syncDriversOrdersFromDB();
+        
         int dispatchDaysAhead = this.getDispatchDays();
         while (true) {
             Driver driver = this.getAvailableDriver(dispatchDaysAhead);
@@ -139,7 +132,7 @@ public class SysRunGUI extends javax.swing.JFrame {
                 int orderLeft = 0;
                 // check same location first, then same city, then everywhere
                 // s is used to substring
-                for (int s = 6; s >= 0; s -= 3) {
+                for (int s = 3; s >= 0; s -= 3) {
                     for (Order order : order_list) {
                         if (order.container_list.con20_num > 0 || order.container_list.con40_num > 0) {
                             orderLeft++;
@@ -188,7 +181,8 @@ public class SysRunGUI extends javax.swing.JFrame {
         }
     }
 
-    public String getDispatchResultString(String result) {
+    public ArrayList<String> getDispatchResultString(String result) {
+        ArrayList<String> allResult = new ArrayList<String>();
         String all = "";
         for (Driver driver : driver_list) {
             int r = 0;
@@ -197,25 +191,42 @@ public class SysRunGUI extends javax.swing.JFrame {
                 for (Map.Entry<String, HashMap<Integer, Integer>> order : round.getOrderDispatch().entrySet()) {
                     String containerInfo = "";
                     if (order.getValue().containsKey(40)) {
-                        containerInfo += " 40ft:" + order.getValue().get(40);
+                        containerInfo += "40ft:" + order.getValue().get(40);
                     }
                     if (order.getValue().containsKey(20)) {
-                        containerInfo += " 20ft:" + order.getValue().get(20);
+                        containerInfo += ":20ft:" + order.getValue().get(20);
                     }
                     if (containerInfo != "") {
                         if (orderId.equals(order.getKey())) {
                             all += containerInfo;
                         } else {
-                            all += "\n" + driver.getName() + ", priority:" + driver.getPriority() + ", day: " + (int) (r / 6 + 1) + ", round:" + (r % 6 + 1) + ", order id:" + order.getKey() + ", from: " + round.getFrom() + ", to: " + round.getTo() + ", containers:" + containerInfo;
+                            all = driver.getName() + ",priority:" + driver.getPriority() + ",day:"
+                                    + (int) (r / 6 + 1) + ",round:" + (r % 6 + 1) + ",order id:" + order.getKey() + ",from: "
+                                    + round.getFrom() + ",to:" + round.getTo() + ",containers:" + containerInfo;
+                            String[] containerSplit = containerInfo.split(":");
+                            int con20 = 0, con40 = 0;
+                            if (containerSplit.length == 4) {
+                                con20 = Integer.parseInt(containerSplit[3]);
+                                con40 = Integer.parseInt(containerSplit[1]);
+                            }
+                            if (containerSplit.length == 3) {
+                                con20 = Integer.parseInt(containerSplit[2]);
+                            }
+                            String sqlQuery = "INSERT INTO DISPATCH_RESULT VALUES ('" + driver.getName()
+                                    + "'," + driver.getPriority() + "," + (int) (r / 6 + 1) + "," + (r % 6 + 1) + ",'" + order.getKey() + "','"
+                                    + round.getFrom() + "','" + round.getTo() + "'," + con40 + "," + con20+")";
+                            addDispatchToDatabase(sqlQuery);
                         }
                     }
+                    allResult.add(all);
+
                 }
                 r++;
             }
         }
 
         all += "\n" + result;
-        return all;
+        return allResult;
     }
 
     public void establishConnection() {
@@ -239,15 +250,6 @@ public class SysRunGUI extends javax.swing.JFrame {
         }
     }
 
-    public void formDatabaseTable() {
-        //Use DMBC create your own local database. Form a TABLE for ORDER, DRIVER
-        //In ORDER table, the variables are ORDER_ID VARCHAR(20), START_DATE VARCHAR(30),
-        //CUTOFF_DATE VARCHAR(30), 20_FT_CONTAINER INT, 40_FT_CONTAINER INT.
-
-        //In DRIVER table, the varibles are DRIVER_NAME VARCHAR(30), DRIVER_ID VARCHAR(20),
-        //DRIVER_PRIORITY INT.
-    }
-
     public void addOrderToDataBase(String sqlQuery) {
         try {
             statement.executeUpdate(sqlQuery);
@@ -258,6 +260,15 @@ public class SysRunGUI extends javax.swing.JFrame {
     }
 
     public void addDriverToDataBase(String sqlQuery) {
+        try {
+            statement.executeUpdate(sqlQuery);
+        } catch (SQLException ex) {
+            this.labelAlert.setText("Failed to write driver to database: " + ex.getMessage());
+            Logger.getLogger(SysRun.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    public void addDispatchToDatabase(String sqlQuery) {
         try {
             statement.executeUpdate(sqlQuery);
         } catch (SQLException ex) {
@@ -297,6 +308,14 @@ public class SysRunGUI extends javax.swing.JFrame {
             String sqlQuery = "create table ORDER_LIST (order_id VARCHAR(100) PRIMARY KEY, date_year INT, date_month int, date_day int, date_hour int, date_min int, con20 int, con40 int, address_id VARCHAR(100), from_name VARCHAR(100), from_id VARCHAR(100), to_name VARCHAR(100), to_id VARCHAR(100))";
             statement.execute(sqlQuery);
         } catch (SQLException ex) {
+        }
+
+        try {
+            statement = conn.createStatement();
+            String sqlQuery = "CREATE TABLE DISPATCH_RESULT (DRIVER_NAME VARCHAR(50), DRIVER_PRIORITY INT, DAY INT, ROUND INT, ORDER_ID VARCHAR(100), FROM_LOCATION VARCHAR(10), TO_LOCATION VARCHAR(10), CON40 INT, CON20 INT)";
+            statement.execute(sqlQuery);
+        } catch (SQLException ex) {
+
         }
     }
 
@@ -373,6 +392,11 @@ public class SysRunGUI extends javax.swing.JFrame {
         String dispatchResult = null;
         this.establishConnection();
 
+        ImageIcon icon1 = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("RecurIcon.png")));
+        Image img1 = icon1.getImage();
+        Image img2 = img1.getScaledInstance(jLabel24.getWidth(), jLabel24.getHeight(), Image.SCALE_SMOOTH);
+        ImageIcon icon2 = new ImageIcon(img2);
+        jLabel24.setIcon(icon2);
         this.createTables();
         this.retriveDrvierList();
         this.retriveOrderList();
@@ -449,15 +473,19 @@ public class SysRunGUI extends javax.swing.JFrame {
         btnDelDriver = new javax.swing.JButton();
         jPanel6 = new javax.swing.JPanel();
         btnDispatch = new javax.swing.JButton();
-        jpanel2 = new javax.swing.JScrollPane();
-        textDispatchResult = new javax.swing.JTextPane();
         dispatchDays = new javax.swing.JComboBox<>();
         jLabel16 = new javax.swing.JLabel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        dispatchTable = new javax.swing.JTable();
         jLabel15 = new javax.swing.JLabel();
         labelAlert = new javax.swing.JLabel();
         jLabel17 = new javax.swing.JLabel();
+        jLabel24 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Recur Transport Management System");
+        setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("RecurIcon.png")));
+        setResizable(false);
 
         jPanel1.setToolTipText("");
 
@@ -513,37 +541,30 @@ public class SysRunGUI extends javax.swing.JFrame {
                     .addComponent(jLabel22)
                     .addComponent(jLabel5)
                     .addComponent(jLabel6))
+                .addGap(18, 18, 18)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(fromLocation, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGap(27, 27, 27)
+                        .addGap(9, 9, 9)
                         .addComponent(jLabel7))
+                    .addComponent(textOrder, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(orderTime, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGap(18, 18, 18)
-                        .addComponent(textOrder, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(textDate, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel3))
+                    .addComponent(textAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 303, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(toLocation, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(orderTime, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addComponent(textDate, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jLabel3))
-                            .addComponent(textAddress, javax.swing.GroupLayout.PREFERRED_SIZE, 303, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(fromLocation, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(text20FtNum, javax.swing.GroupLayout.PREFERRED_SIZE, 157, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(text40FtNum, javax.swing.GroupLayout.PREFERRED_SIZE, 157, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(18, 18, 18)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(toLocation, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(jPanel2Layout.createSequentialGroup()
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(text20FtNum, javax.swing.GroupLayout.PREFERRED_SIZE, 157, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(text40FtNum, javax.swing.GroupLayout.PREFERRED_SIZE, 157, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGap(18, 18, 18)
-                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel13)
-                                    .addComponent(jLabel12)))
-                            .addComponent(btnAddOrder))))
-                .addContainerGap(267, Short.MAX_VALUE))
+                            .addComponent(jLabel13)
+                            .addComponent(jLabel12)))
+                    .addComponent(btnAddOrder))
+                .addContainerGap(255, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -559,7 +580,7 @@ public class SysRunGUI extends javax.swing.JFrame {
                     .addComponent(jLabel2)
                     .addComponent(textDate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel3))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel18)
                     .addComponent(orderTime, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -587,7 +608,7 @@ public class SysRunGUI extends javax.swing.JFrame {
                     .addComponent(jLabel13))
                 .addGap(18, 18, 18)
                 .addComponent(btnAddOrder)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(77, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Add Order", jPanel2);
@@ -650,7 +671,7 @@ public class SysRunGUI extends javax.swing.JFrame {
                     .addComponent(driverFinishTime, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(textDriverName, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(driverLocation, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(326, Short.MAX_VALUE))
+                .addContainerGap(356, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -744,7 +765,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 795, Short.MAX_VALUE)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 783, Short.MAX_VALUE)
                     .addGroup(jPanel4Layout.createSequentialGroup()
                         .addComponent(btnResetOrders)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -820,7 +841,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 795, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 783, Short.MAX_VALUE)
                     .addGroup(jPanel5Layout.createSequentialGroup()
                         .addComponent(btnResetDrivers)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -849,13 +870,45 @@ public class SysRunGUI extends javax.swing.JFrame {
             }
         });
 
-        textDispatchResult.setEditable(false);
-        textDispatchResult.setText("Dispatch result will show up here...");
-        jpanel2.setViewportView(textDispatchResult);
-
         dispatchDays.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "1 Day", "3 Days", "1 Week" }));
 
         jLabel16.setText("Dispatch Days:");
+
+        dispatchTable.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+
+            },
+            new String [] {
+                "Name", "Priority", "Day", "Round", "Order ID", "FROM", "TO", "40Ft", "20Ft"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class
+            };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
+            }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
+        jScrollPane2.setViewportView(dispatchTable);
+        if (dispatchTable.getColumnModel().getColumnCount() > 0) {
+            dispatchTable.getColumnModel().getColumn(0).setMinWidth(150);
+            dispatchTable.getColumnModel().getColumn(0).setMaxWidth(200);
+            dispatchTable.getColumnModel().getColumn(2).setResizable(false);
+            dispatchTable.getColumnModel().getColumn(3).setResizable(false);
+            dispatchTable.getColumnModel().getColumn(4).setResizable(false);
+            dispatchTable.getColumnModel().getColumn(5).setResizable(false);
+            dispatchTable.getColumnModel().getColumn(6).setResizable(false);
+            dispatchTable.getColumnModel().getColumn(7).setResizable(false);
+            dispatchTable.getColumnModel().getColumn(8).setResizable(false);
+        }
 
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
@@ -868,10 +921,10 @@ public class SysRunGUI extends javax.swing.JFrame {
                 .addComponent(dispatchDays, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(btnDispatch)
-                .addContainerGap(342, Short.MAX_VALUE))
+                .addContainerGap(330, Short.MAX_VALUE))
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jpanel2)
+                .addComponent(jScrollPane2)
                 .addContainerGap())
         );
         jPanel6Layout.setVerticalGroup(
@@ -883,8 +936,8 @@ public class SysRunGUI extends javax.swing.JFrame {
                     .addComponent(dispatchDays, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel16))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jpanel2, javax.swing.GroupLayout.DEFAULT_SIZE, 343, Short.MAX_VALUE)
-                .addContainerGap())
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 341, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(12, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Dispatch", jPanel6);
@@ -910,15 +963,20 @@ public class SysRunGUI extends javax.swing.JFrame {
                         .addGap(18, 18, 18)
                         .addComponent(labelAlert, javax.swing.GroupLayout.PREFERRED_SIZE, 732, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(222, 222, 222)
+                        .addContainerGap()
+                        .addComponent(jLabel24, javax.swing.GroupLayout.PREFERRED_SIZE, 68, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(144, 144, 144)
                         .addComponent(jLabel15)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(22, 22, 22)
-                .addComponent(jLabel15, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jLabel15, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel24, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(1, 1, 1)))
                 .addGap(18, 18, 18)
                 .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 421, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -944,7 +1002,6 @@ public class SysRunGUI extends javax.swing.JFrame {
 
     private void updateDisplayDriverList() {
         this.sortDriverList();
-//        this.textDrivers.setText(this.getDriverListString());
         DefaultTableModel model = (DefaultTableModel) DriverTable.getModel();
         model.setRowCount(0);
         Object rowData[] = new Object[4];
@@ -959,7 +1016,6 @@ public class SysRunGUI extends javax.swing.JFrame {
 
     private void updateDisplayOrderList() {
         this.sortOrderList();
-//        this.textOrders.setText(this.getOrderListString());
         DefaultTableModel model = (DefaultTableModel) OrderTable.getModel();
         model.setRowCount(0);
         Object rowData[] = new Object[8];
@@ -1056,7 +1112,7 @@ public class SysRunGUI extends javax.swing.JFrame {
         try {
             priority = Integer.parseInt(this.textDriverPriority.getText());
 
-         } catch (Exception e) {
+        } catch (Exception e) {
             this.labelAlert.setText("Invalid driver priority number");
             return;
         }
@@ -1076,7 +1132,7 @@ public class SysRunGUI extends javax.swing.JFrame {
                 + textDriverName.getText() + "', '"
                 + location + "'," + priority + ", '" + this.driverStartTime.getSelectedItem().toString() + "', '" + this.driverFinishTime.getSelectedItem().toString() + "')";
         this.addDriverToDataBase(sqlQuery1);
-        
+
         this.labelAlert.setText("New Driver added successfully!");
         this.updateDisplayDriverList();
         this.resetDriverTextFields();
@@ -1091,7 +1147,35 @@ public class SysRunGUI extends javax.swing.JFrame {
         this.driverFinishTime.setSelectedIndex(0);
     }
     private void btnDispatchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDispatchActionPerformed
-        this.textDispatchResult.setText(this.getDispatchResultString(this.dispatchingOrders()));
+        ArrayList<String> result = this.getDispatchResultString(this.dispatchingOrders());
+        DefaultTableModel model = (DefaultTableModel) dispatchTable.getModel();
+        model.setRowCount(0);
+        Object rowData[] = new Object[9];
+        for (String s : result) {
+            String[] split1 = s.split(",");
+            rowData[0] = split1[0];
+            String[] prioritySplit = split1[1].split(":");
+            rowData[1] = prioritySplit[1];
+            String[] daySplit = split1[2].split(":");
+            rowData[2] = daySplit[1];
+            String[] roundSplit = split1[3].split(":");
+            rowData[3] = roundSplit[1];
+            String[] orderIdSplit = split1[4].split(":");
+            rowData[4] = orderIdSplit[1];
+            String[] fromSplit = split1[5].split(":");
+            rowData[5] = fromSplit[1];
+            String[] toSplit = split1[6].split(":");
+            rowData[6] = toSplit[1];
+            String[] containerSplit = split1[7].split(":");
+            if (containerSplit.length == 4) {
+                rowData[7] = "0";
+                rowData[8] = containerSplit[3];
+            } else if (containerSplit.length == 5) {
+                rowData[7] = containerSplit[2];
+                rowData[8] = containerSplit[4];
+            }
+            model.addRow(rowData);
+        }
     }//GEN-LAST:event_btnDispatchActionPerformed
 
     private void btnResetOrdersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnResetOrdersActionPerformed
@@ -1100,7 +1184,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             d.resetRounds();
         }
         this.clearOrdersInDB();
-        this.textDispatchResult.setText("");
+//        this.textDispatchResult.setText("");
         this.updateDisplayOrderList();
     }//GEN-LAST:event_btnResetOrdersActionPerformed
 
@@ -1117,7 +1201,7 @@ public class SysRunGUI extends javax.swing.JFrame {
             Object order_id = model.getValueAt(rows[i], 0);
             this.delOrderFromDB(order_id.toString());
             for (int j = 0; j < order_list.size(); j++) {
-                if (order_list.get(i).getId().equals(order_id.toString())) {
+                if (order_list.get(j).getId().equals(order_id.toString())) {
                     order_list.remove(j);
                 }
             }
@@ -1145,22 +1229,23 @@ public class SysRunGUI extends javax.swing.JFrame {
     }//GEN-LAST:event_btnDelDriverActionPerformed
 
     private void delDriverFromDB(String id) {
-        try{
-            String sql = "DELETE FROM DRIVER_LIST WHERE DRIVER_ID LIKE'"+id+"'";
+        try {
+            String sql = "DELETE FROM DRIVER_LIST WHERE DRIVER_ID LIKE'" + id + "'";
             statement.executeUpdate(sql);
-        }catch (SQLException ex) {
+        } catch (SQLException ex) {
             System.out.println(ex.getMessage());
         }
     }
 
     private void delOrderFromDB(String id) {
-        try{
-            String sql = "DELETE FROM ORDER_LIST WHERE ORDER_ID LIKE'"+id+"'";
+        try {
+            String sql = "DELETE FROM ORDER_LIST WHERE ORDER_ID LIKE'" + id + "'";
             statement.executeUpdate(sql);
-        }catch (SQLException ex) {
+        } catch (SQLException ex) {
             System.out.println(ex.getMessage());
         }
     }
+
     /**
      * @param args the command line arguments
      */
@@ -1207,6 +1292,7 @@ public class SysRunGUI extends javax.swing.JFrame {
     private javax.swing.JButton btnResetDrivers;
     private javax.swing.JButton btnResetOrders;
     private javax.swing.JComboBox<String> dispatchDays;
+    private javax.swing.JTable dispatchTable;
     private javax.swing.JComboBox<String> driverFinishTime;
     private javax.swing.JComboBox<Location> driverLocation;
     private javax.swing.JComboBox<String> driverStartTime;
@@ -1227,6 +1313,7 @@ public class SysRunGUI extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel21;
     private javax.swing.JLabel jLabel22;
     private javax.swing.JLabel jLabel23;
+    private javax.swing.JLabel jLabel24;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
@@ -1241,16 +1328,15 @@ public class SysRunGUI extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel6;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JTabbedPane jTabbedPane1;
-    private javax.swing.JScrollPane jpanel2;
     private javax.swing.JLabel labelAlert;
     private javax.swing.JComboBox<String> orderTime;
     private javax.swing.JTextField text20FtNum;
     private javax.swing.JTextField text40FtNum;
     private javax.swing.JTextField textAddress;
     private javax.swing.JTextField textDate;
-    private javax.swing.JTextPane textDispatchResult;
     private javax.swing.JTextField textDriverId;
     private javax.swing.JTextField textDriverName;
     private javax.swing.JTextField textDriverPriority;
