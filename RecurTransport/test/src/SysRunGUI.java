@@ -390,7 +390,7 @@ public class SysRunGUI extends javax.swing.JFrame {
 
         try {
             statement = conn.createStatement();
-            String sqlQuery = "CREATE TABLE DISPATCH_RESULT (DRIVER_NAME VARCHAR(50), DRIVER_PRIORITY INT, DAY INT, ROUND INT, ORDER_ID VARCHAR(100), FROM_LOCATION VARCHAR(10), TO_LOCATION VARCHAR(10), CON40 INT, CON20 INT)";
+            String sqlQuery = "CREATE TABLE DISPATCH_RESULT (DRIVER_NAME VARCHAR(50), DRIVER_PRIORITY INT, DAY INT, ROUND INT, ORDER_ID VARCHAR(100), FROM_LOCATION VARCHAR(100), TO_LOCATION VARCHAR(100), CON40 INT, CON20 INT)";
             statement.execute(sqlQuery);
         } catch (SQLException ex) {
 
@@ -982,6 +982,7 @@ public class SysRunGUI extends javax.swing.JFrame {
         if (dispatchTable.getColumnModel().getColumnCount() > 0) {
             dispatchTable.getColumnModel().getColumn(0).setMinWidth(150);
             dispatchTable.getColumnModel().getColumn(0).setMaxWidth(200);
+            dispatchTable.getColumnModel().getColumn(1).setResizable(false);
             dispatchTable.getColumnModel().getColumn(2).setResizable(false);
             dispatchTable.getColumnModel().getColumn(3).setResizable(false);
             dispatchTable.getColumnModel().getColumn(4).setResizable(false);
@@ -1018,7 +1019,7 @@ public class SysRunGUI extends javax.swing.JFrame {
                     .addComponent(jLabel16))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 341, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(12, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Dispatch", jPanel6);
