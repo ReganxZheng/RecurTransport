@@ -1024,7 +1024,7 @@ public class SysRunGUI extends javax.swing.JFrame {
         jTabbedPane1.addTab("Dispatch", jPanel6);
 
         jLabel15.setFont(new java.awt.Font("Lucida Grande", 0, 18)); // NOI18N
-        jLabel15.setText("Recur Transport Auto Dispatch System");
+        jLabel15.setText("Recur Transport Automatic Dispatch System");
 
         labelAlert.setFont(new java.awt.Font("Lucida Grande", 2, 13)); // NOI18N
         labelAlert.setText("Add drivers and orders to start!");
