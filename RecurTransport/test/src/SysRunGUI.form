@@ -200,7 +200,7 @@
                           </Group>
                           <EmptySpace type="separate" max="-2" attributes="0"/>
                           <Component id="btnAddOrder" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace pref="77" max="32767" attributes="0"/>
+                          <EmptySpace pref="8" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -428,7 +428,7 @@
                           </Group>
                           <EmptySpace min="-2" pref="3" max="-2" attributes="0"/>
                           <Component id="btnAddDriver" min="-2" max="-2" attributes="0"/>
-                          <EmptySpace pref="116" max="32767" attributes="0"/>
+                          <EmptySpace pref="57" max="32767" attributes="0"/>
                       </Group>
                   </Group>
                 </DimensionLayout>
@@ -579,8 +579,8 @@
             <Container class="javax.swing.JPanel" name="jPanel4">
               <Constraints>
                 <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout$JTabbedPaneConstraintsDescription">
-                  <JTabbedPaneConstraints tabName="Show Orders">
-                    <Property name="tabTitle" type="java.lang.String" value="Show Orders"/>
+                  <JTabbedPaneConstraints tabName="Show/Edit Orders">
+                    <Property name="tabTitle" type="java.lang.String" value="Show/Edit Orders"/>
                   </JTabbedPaneConstraints>
                 </Constraint>
               </Constraints>
@@ -713,8 +713,8 @@
             <Container class="javax.swing.JPanel" name="jPanel5">
               <Constraints>
                 <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout" value="org.netbeans.modules.form.compat2.layouts.support.JTabbedPaneSupportLayout$JTabbedPaneConstraintsDescription">
-                  <JTabbedPaneConstraints tabName="Show Drivers">
-                    <Property name="tabTitle" type="java.lang.String" value="Show Drivers"/>
+                  <JTabbedPaneConstraints tabName="Show/Edit Drivers">
+                    <Property name="tabTitle" type="java.lang.String" value="Show/Edit Drivers"/>
                   </JTabbedPaneConstraints>
                 </Constraint>
               </Constraints>

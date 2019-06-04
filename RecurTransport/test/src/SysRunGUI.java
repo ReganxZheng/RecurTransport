@@ -689,7 +689,7 @@ public class SysRunGUI extends javax.swing.JFrame {
                     .addComponent(jLabel13))
                 .addGap(18, 18, 18)
                 .addComponent(btnAddOrder)
-                .addContainerGap(77, Short.MAX_VALUE))
+                .addContainerGap(8, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Add Order", jPanel2);
@@ -786,7 +786,7 @@ public class SysRunGUI extends javax.swing.JFrame {
                     .addComponent(driverFinishTime, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(3, 3, 3)
                 .addComponent(btnAddDriver)
-                .addContainerGap(116, Short.MAX_VALUE))
+                .addContainerGap(57, Short.MAX_VALUE))
         );
 
         jTabbedPane1.addTab("Add Driver", jPanel3);
@@ -866,7 +866,7 @@ public class SysRunGUI extends javax.swing.JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jTabbedPane1.addTab("Show Orders", jPanel4);
+        jTabbedPane1.addTab("Show/Edit Orders", jPanel4);
 
         btnResetDrivers.setText("Reset Drivers");
         btnResetDrivers.addActionListener(new java.awt.event.ActionListener() {
@@ -942,7 +942,7 @@ public class SysRunGUI extends javax.swing.JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jTabbedPane1.addTab("Show Drivers", jPanel5);
+        jTabbedPane1.addTab("Show/Edit Drivers", jPanel5);
 
         btnDispatch.setText("Run Dispatch");
         btnDispatch.addActionListener(new java.awt.event.ActionListener() {
@@ -982,7 +982,6 @@ public class SysRunGUI extends javax.swing.JFrame {
         if (dispatchTable.getColumnModel().getColumnCount() > 0) {
             dispatchTable.getColumnModel().getColumn(0).setMinWidth(150);
             dispatchTable.getColumnModel().getColumn(0).setMaxWidth(200);
-            dispatchTable.getColumnModel().getColumn(1).setResizable(false);
             dispatchTable.getColumnModel().getColumn(2).setResizable(false);
             dispatchTable.getColumnModel().getColumn(3).setResizable(false);
             dispatchTable.getColumnModel().getColumn(4).setResizable(false);
