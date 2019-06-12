@@ -308,12 +308,10 @@ public class SysRunGUI extends javax.swing.JFrame {
         try {
             Class.forName(driverURL);
             conn = DriverManager.getConnection(dbURL);
-
+            statement = conn.createStatement();
             System.out.println("database connected.");
-        } catch (SQLException e) {
+        } catch (SQLException | ClassNotFoundException e) {
             Logger.getLogger(SysRun.class.getName()).log(Level.SEVERE, null, e);
-        } catch (ClassNotFoundException ex) {
-
         }
     }
 
@@ -375,21 +373,21 @@ public class SysRunGUI extends javax.swing.JFrame {
 
     public void createTables() {
         try {
-            statement = conn.createStatement();
+//            statement = conn.createStatement();
             String sqlQuery = "create table DRIVER_LIST (driver_id VARCHAR(100), driver_name VARCHAR(100), driver_location VARCHAR(100), driver_priority INT, start_time VARCHAR(100), stop_time VARCHAR(100))";
             statement.execute(sqlQuery);
         } catch (SQLException ex) {
         }
 
         try {
-            statement = conn.createStatement();
+//            statement = conn.createStatement();
             String sqlQuery = "create table ORDER_LIST (order_id VARCHAR(100) PRIMARY KEY, date_year INT, date_month int, date_day int, date_hour int, date_min int, con20 int, con40 int, address_id VARCHAR(100), from_name VARCHAR(100), from_id VARCHAR(100), to_name VARCHAR(100), to_id VARCHAR(100))";
             statement.execute(sqlQuery);
         } catch (SQLException ex) {
         }
 
         try {
-            statement = conn.createStatement();
+//            statement = conn.createStatement();
             String sqlQuery = "CREATE TABLE DISPATCH_RESULT (DRIVER_NAME VARCHAR(50), DRIVER_PRIORITY INT, DAY INT, ROUND INT, ORDER_ID VARCHAR(100), FROM_LOCATION VARCHAR(100), TO_LOCATION VARCHAR(100), CON40 INT, CON20 INT)";
             statement.execute(sqlQuery);
         } catch (SQLException ex) {
@@ -400,7 +398,7 @@ public class SysRunGUI extends javax.swing.JFrame {
     public void retriveDrvierList() {
         ResultSet rs = null;
         try {
-            statement = conn.createStatement();
+//            statement = conn.createStatement();
             String sqlQuery = "select * from DRIVER_LIST ORDER BY DRIVER_PRIORITY";
             rs = statement.executeQuery(sqlQuery);
             int i = 0;
@@ -425,7 +423,7 @@ public class SysRunGUI extends javax.swing.JFrame {
     public void retriveOrderList() {
         ResultSet rs = null;
         try {
-            statement = conn.createStatement();
+//            statement = conn.createStatement();
             String sqlQuery = "select * from ORDER_LIST";
             rs = statement.executeQuery(sqlQuery);
             int i = 0;
@@ -469,7 +467,6 @@ public class SysRunGUI extends javax.swing.JFrame {
         }
         String dispatchResult = null;
         this.establishConnection();
-
         try {
             ImageIcon icon1 = new ImageIcon(Toolkit.getDefaultToolkit().getImage(getClass().getResource("RecurIcon.png")));
             Image img1 = icon1.getImage();
